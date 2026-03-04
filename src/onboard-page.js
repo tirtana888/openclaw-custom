@@ -1769,6 +1769,15 @@ export function getSetupPageHTML({ isConfigured, gatewayInfo, password, stateDir
         return false;
       }
 
+      function isSecretOptional() {
+        if (selectedProviderIndex === null || selectedAuthChoice === null) return false;
+        var opts = authGroups[selectedProviderIndex].options;
+        for (var i = 0; i < opts.length; i++) {
+          if (opts[i].value === selectedAuthChoice) return !!(opts[i].secretOptional);
+        }
+        return false;
+      }
+
       window.validateAndGoToStep = function(n) {
         if (selectedProviderIndex === null) {
           showStep2Error(t('step2.err.noProvider'));
@@ -1778,7 +1787,7 @@ export function getSetupPageHTML({ isConfigured, gatewayInfo, password, stateDir
           showStep2Error(t('step2.err.noAuth'));
           return;
         }
-        if (selectedAuthChoice !== 'ollama' && !isNoSecretChoice()) {
+        if (selectedAuthChoice !== 'ollama' && !isNoSecretChoice() && !isSecretOptional()) {
           var secretVal = document.getElementById('secret-input').value.trim();
           if (!secretVal) {
             showStep2Error(t('step2.err.noKey'));
@@ -1920,6 +1929,11 @@ export function getSetupPageHTML({ isConfigured, gatewayInfo, password, stateDir
           secretGroup.style.display = 'none';
         } else if (selectedAuthChoice !== null) {
           secretGroup.style.display = 'block';
+          // Update label to show "(optional)" when the API key is not required
+          var secretLabel = document.getElementById('secret-label');
+          if (secretLabel) {
+            secretLabel.textContent = isSecretOptional() ? t('step2.apiKey') + ' (optional)' : t('step2.apiKey');
+          }
           var group = authGroups[selectedProviderIndex];
           var link = providerHelpLinks[group.provider];
           // Build hint text safely using DOM methods

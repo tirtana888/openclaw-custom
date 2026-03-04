@@ -259,6 +259,7 @@ const AUTH_GROUPS = [
         value: 'custom-api-key',
         flag: ['--auth-choice', 'custom-api-key', '--custom-compatibility', 'openai'],
         secretFlag: '--custom-api-key',
+        secretOptional: true,
         extraFields: [
           { id: 'custom-base-url', label: 'Base URL', flag: '--custom-base-url', placeholder: 'https://api.example.com/v1' },
           { id: 'custom-model-id', label: 'Model ID', flag: '--custom-model-id', placeholder: 'gpt-4o' }
@@ -539,8 +540,11 @@ app.post('/onboard/api/run', authMiddleware, async (req, res) => {
     if (flag) {
       if (Array.isArray(flag)) {
         onboardArgs.push(...flag);
-        if (opt.secretFlag && authSecret) {
-          onboardArgs.push(opt.secretFlag, authSecret);
+        // For secretOptional providers (e.g. Plano), fall back to 'nokey' so the
+        // flag is always passed and onboard doesn't prompt interactively.
+        const secretVal = authSecret || (opt.secretOptional ? 'nokey' : null);
+        if (opt.secretFlag && secretVal) {
+          onboardArgs.push(opt.secretFlag, secretVal);
         }
       } else if (authSecret) {
         onboardArgs.push(flag, authSecret);
