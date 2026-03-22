@@ -912,6 +912,11 @@ async function runPostStartupTasks(configFile, context = '') {
     try {
       console.log(`Ensuring Composio plugin is installed for Consumer Key...${logSuffix}`);
       
+      // Forcefully clear any stale/invalid configurations (like 'ak_...' keys) 
+      // from the persistent volume so it falls back to parsing process.env.COMPOSIO_CONSUMER_KEY
+      await runCmd('config', ['unset', 'plugins.entries.composio']);
+      console.log(`Cleared stale composio config from volume. Resolving from env var...${logSuffix}`);
+
       // Ensure plugin is installed (safe if already present)
       await runCmd('plugins', ['install', '@composio/openclaw-plugin']);
       
