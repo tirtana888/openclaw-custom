@@ -906,6 +906,39 @@ async function runPostStartupTasks(configFile, context = '') {
       console.log('Memory index skipped:', result.stderr.trim());
     }
   }).catch(() => {});
+
+  // 4. Auto-configure Composio if API key is present
+  if (process.env.COMPOSIO_API_KEY) {
+    try {
+      console.log(`Configuring Composio plugin${logSuffix}...`);
+      
+      // Ensure plugin is installed (safe if already present)
+      await runCmd('plugins', ['install', '@composio/openclaw-plugin']);
+      
+      const composioPayload = {
+        enabled: true,
+        config: {
+          consumerKey: process.env.COMPOSIO_API_KEY,
+          entityId: process.env.COMPOSIO_ENTITY_ID || ''
+        }
+      };
+
+      // Set configuration via CLI (goes through gateway validation)
+      const result = await runCmd('config', [
+        'set', '--json',
+        'plugins.entries.composio',
+        JSON.stringify(composioPayload)
+      ]);
+
+      if (result.code === 0) {
+        console.log(`Composio plugin auto-configured${logSuffix}`);
+      } else {
+        console.warn(`Composio config set failed: ${result.stderr.trim()}`);
+      }
+    } catch (e) {
+      console.warn(`Failed to auto-configure Composio${logSuffix}: ${e.message}`);
+    }
+  }
 }
 
 /**

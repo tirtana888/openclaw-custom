@@ -23,7 +23,8 @@
     "jszip": "^3.10.1",
     "node-pty": "^1.0.0",
     "simple-icons": "^16.6.1",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "@composio/openclaw-plugin": "latest"
   },
   "keywords": [
     "openclaw",
