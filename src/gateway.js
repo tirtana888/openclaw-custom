@@ -912,21 +912,28 @@ async function runPostStartupTasks(configFile, context = '') {
     try {
       console.log(`Ensuring Composio plugin is installed for Consumer Key...${logSuffix}`);
       
-      // Forcefully clear any stale/invalid configurations (like 'ak_...' keys) 
-      // from the persistent volume so it falls back to parsing process.env.COMPOSIO_CONSUMER_KEY
-      await runCmd('config', ['unset', 'plugins.entries.composio']);
-      console.log(`Cleared stale composio config from volume. Resolving from env var...${logSuffix}`);
+      // Forcefully overwrite the stale configuration from the persistent volume 
+      // by setting the payload to the current environment variable.
+      // This is necessary because cached config takes precedence over process.env.
+      const composioPayload = {
+        enabled: true,
+        config: {
+          consumerKey: process.env.COMPOSIO_CONSUMER_KEY
+        }
+      };
+      await runCmd('config', ['set', '--json', 'plugins.entries.composio', JSON.stringify(composioPayload)]);
+      await runCmd('config', ['set', '--json', 'plugins.allow', '["composio"]']);
+      console.log(`Hard-overwrote composio config and added to plugins.allow...${logSuffix}`);
 
       // Ensure plugin is installed (safe if already present)
       await runCmd('plugins', ['install', '@composio/openclaw-plugin']);
       
-      console.log(`Composio plugin installation verified. Native auto-config will handle the connection.${logSuffix}`);
+      console.log(`Composio plugin installation verified.${logSuffix}`);
     } catch (e) {
       console.warn(`Failed to verify Composio plugin${logSuffix}: ${e.message}`);
     }
   }
 }
-
 /**
  * Poll for gateway readiness in the background (when initial wait times out)
  * Checks every 5s for up to 5 minutes
